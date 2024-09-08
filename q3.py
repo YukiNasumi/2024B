@@ -1,3 +1,4 @@
+# -*- coding: gbk -*-
 from case_dict import case
 import numpy as np
 import copy
@@ -60,14 +61,7 @@ class product():
         return self.ok
         
 def makehalf(lens,parts,halfs,ths,dhs):
-    
-    '''
-    Args:
-        lens (_type_): 追踪零件库的数量
-        parts (_type_): 零件库
-        halfs (_type_): 半成品库
-        ths (_type_): 是否测试半成品，决策元组
-'''
+
     global cost,income,case
     empty = lambda l:0 in l
     while(not empty(lens)):
@@ -76,7 +70,7 @@ def makehalf(lens,parts,halfs,ths,dhs):
             idx1 = random.randint(0,lens[a-1]-1)
             idx2 = random.randint(0,lens[b-1]-1)
             if c:
-                idx3 = random.randint(0,lens[c]-1)
+                idx3 = random.randint(0,lens[c-1]-1)
             cost += case['h{}'.format(i)]['cost']
             if c:
                 half = half_product12(parts[a-1][idx1],parts[b-1][idx2],parts[c-1][idx3],case['h{}'.format(i)]['fail'])
@@ -115,7 +109,7 @@ def makehalf(lens,parts,halfs,ths,dhs):
 
     pass
 def disassemble_half(parts,half):
-    """执行拆解半成品操作，cost要自己加"""
+
     for part in half.parts:
         if not part.tested:#没测过一定要测
             cost += case['p{}'.format(part.idx)]['test']
@@ -131,13 +125,7 @@ def feedback(num_part,DNA):
     cost=0
     income=0
     global fail_rate,case
-    """_summary_
 
-    Args:
-        num_part (_type_): _description_
-        case (_type_): _description_
-        DNA (_type_): 为16位二进制编码
-    """
     #处理16个参数
     tp1,tp2,tp3,tp4,tp5,tp6,tp7,tp8,th1,th2,th3,dh1,dh2,dh3,tf,df = DNA
     tps = (tp1,tp2,tp3,tp4,tp5,tp6,tp7,tp8)
@@ -187,7 +175,7 @@ def feedback(num_part,DNA):
         idx1 = random.randint(0,lens_halfs[0]-1)
         idx2 = random.randint(0,lens_halfs[1]-1)
         idx3 = random.randint(0,lens_halfs[2]-1)
-        cost += cost['f']['cost']
+        cost += case['f']['cost']
         assemble_product = product(half1[idx1],half2[idx2],half3[idx3],case['f']['fail'])
         if tf:
             cost += case['f']['test']
@@ -269,3 +257,4 @@ def evolution(pop,N_GENERATION):
 if __name__ == '__main__':
     dna = np.random.randint(2,size=(DNA_SIZE,))
     result = feedback(100,dna)
+    print(result)
