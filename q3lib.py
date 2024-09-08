@@ -27,9 +27,10 @@ def pop2pie(pop,N):
         if num in data_dict:
             data_dict[num]+=1
         else:
-            data_dict[num]=0
-    label = [str(num) for num in data_dict.keys]
-    size = [times for times in data_dict.values]
+            data_dict[num]=1
+    label = [str(num) for num in data_dict.keys()]
+    size = [times for times in data_dict.values()]
+    print(label,size)
     plt.pie(size,labels=label,shadow=True)
     plt.axis('equal')
     plt.title('Generation {}'.format(N))
