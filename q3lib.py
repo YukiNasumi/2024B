@@ -3,12 +3,38 @@ from case_dict import case
 import numpy as np
 import copy
 import random
+from matplotlib import pyplot as plt
+import pickle
 DNA_SIZE = 8
 CROSSOVER_RATE = 0.6
 MUTATION_RATE = 0.01
 POP_SIZE = 50
+N_GENERATION = 50
 cost=0
 income=0
+def num2DNA(num):
+    dna = [int(c) for c in format(num,'016b')]
+    return np.array(dna)
+
+def DNA2num(DNA):
+    char_dna = ''.join([str(x) for x in DNA])
+    return int(char_dna,2)
+def pop2pie(pop,N):
+    """绘制饼图的函数"""
+    data_dict ={}
+    for dna in pop:
+        num = DNA2num(dna)
+        if num in data_dict:
+            data_dict[num]+=1
+        else:
+            data_dict[num]=0
+    label = [str(num) for num in data_dict.keys]
+    size = [times for times in data_dict.values]
+    plt.pie(size,labels=label,shadow=True)
+    plt.axis('equal')
+    plt.title('Generation {}'.format(N))
+    plt.pause(0.5)
+    plt.savefig('image/pie-Generation{}'.format(N))
 class part():
     def __init__(self,idx,fail_rate):
         self.idx = idx
@@ -251,25 +277,31 @@ def get_fitness(num_part,pop):
         fitness.append(0 if result<=0 else result)
     return np.array(fitness)
 
-def evolution(pop,num_part,N_GENERATION,pop_size=None,cross_rate=None,mutation_rate=None):
-    global POP_SIZE,MUTATION_RATE,CROSSOVER_RATE
-    if pop_size:
-        POP_SIZE=pop_size
-    if mutation_rate:
-        MUTATION_RATE = mutation_rate
-    if cross_rate:
-        CROSSOVER_RATE = cross_rate
-    for n in range(N_GENERATION):
+def evolution(pop,num_part):
+    global POP_SIZE,MUTATION_RATE,CROSSOVER_RATE,N_GENERATION
+    best_performance = []
+    for n in range(1,N_GENERATION+1):
         pop = np.array(crossover_and_mutation(pop,CROSSOVER_RATE))
         fitness = get_fitness(num_part,pop)
         pop = select(pop,fitness)
         max_fitness_idx = np.argmax(fitness)
-        print('第{}代，最好的基因型{}，收益为{}'.format(n+1,pop[max_fitness_idx],fitness[max_fitness_idx]))
-        
+        best_performance.append(fitness[max_fitness_idx])
+        print('第{}代，最好的基因型{}，收益为{}'.format(n,pop[max_fitness_idx],fitness[max_fitness_idx]))
+        if n%5==0:
+            pop2pie(pop,N=n)
+    
+    plt.xlabel('Generation')
+    plt.ylabel('profit')
+    plt.plot(list(range(1,N_GENERATION+1),best_performance))
+    plt.show()
     return pop.sum(axis=0)/pop.shape[0]
 
-def generate_pop():
-    return np.random.randint(2,size=(POP_SIZE,DNA_SIZE*2))
+def generate_pop(gene_path=None):
+    if not gene_path:
+        return np.random.randint(2,size=(POP_SIZE,DNA_SIZE*2))
+    with open(gene_path,'rb') as f:
+        gene = pickle.load(f)
+    return gene[:POP_SIZE]
 if __name__ == '__main__':
     pop = generate_pop()
     result = evolution(pop,num_part=10000,N_GENERATION=20)
