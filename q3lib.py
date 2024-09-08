@@ -293,7 +293,7 @@ def evolution(pop,num_part):
     
     plt.xlabel('Generation')
     plt.ylabel('profit')
-    plt.plot(list(range(1,N_GENERATION+1),best_performance))
+    plt.plot(list(range(1,N_GENERATION+1)),best_performance)
     plt.show()
     return pop.sum(axis=0)/pop.shape[0]
 
