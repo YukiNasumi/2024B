@@ -3,8 +3,10 @@ from case_dict import case
 import numpy as np
 import copy
 import random
+DNA_SIZE = 8
 CROSSOVER_RATE = 0.6
 MUTATION_RATE = 0.01
+POP_SIZE = 50
 cost=0
 income=0
 class part():
@@ -109,7 +111,7 @@ def makehalf(lens,parts,halfs,ths,dhs):
 
     pass
 def disassemble_half(parts,half):
-
+    global cost
     for part in half.parts:
         if not part.tested:#没测过一定要测
             cost += case['p{}'.format(part.idx)]['test']
@@ -177,6 +179,7 @@ def feedback(num_part,DNA):
         idx3 = random.randint(0,lens_halfs[2]-1)
         cost += case['f']['cost']
         assemble_product = product(half1[idx1],half2[idx2],half3[idx3],case['f']['fail'])
+        del half1[idx1],half2[idx2],half3[idx3]
         if tf:
             cost += case['f']['test']
             if assemble_product.test():
@@ -216,21 +219,19 @@ def feedback(num_part,DNA):
                     pass
         makehalf(lens_parts,parts,halfs,ths,dhs)
         lens_halfs = updata_len_h()
-        return income-cost
+    return income-cost
             
-DNA_SIZE = 16
-POP_SIZE = 50
-def translateDNA(pop):
-    coin = random.randint(0,1)
-    return pop[:,0:DNA_SIZE] if coin else pop[:,DNA_SIZE:]#随机选取一个染色体作为输入方案
+
 def crossover_and_mutation(pop, CROSSOVER_RATE=0.8):
     new_pop = []
     for father in pop:  # 遍历种群中的每一个个体，将该个体作为父亲
         child = father.copy()  # 孩子先得到父亲的全部基因（这里一串二进制串的那些0，1称为基因）
         if np.random.rand() < CROSSOVER_RATE:  # 产生子代时不是必然发生交叉，而是以一定的概率发生交叉
             mother = pop[np.random.randint(POP_SIZE)].copy()  # 再种群中选择另一个个体，并将该个体作为母亲
-            cross_points = np.random.randint(low=0, high=DNA_SIZE * 2)  # 随机产生交叉的点
-            child[cross_points:] = mother[cross_points:]  # 孩子得到位于交叉点后的母亲的基因
+            cross_points1 = np.random.randint(low=0, high=DNA_SIZE * 2)  # 随机产生交叉的点
+            #cross_points2 = np.random.randint(low=cross_points1,high=DNA_SIZE*2)
+            cross_points2 = DNA_SIZE*2
+            child[cross_points1:cross_points2] = mother[cross_points1:cross_points2]  # 孩子得到位于交叉点后的母亲的基因
         mutation(child)  # 每个后代有一定的机率发生变异
         new_pop.append(child)
     return new_pop
@@ -243,18 +244,32 @@ def select(pop, fitness):  # nature selection wrt pop's fitness
                            p=(fitness) / (fitness.sum()))#概率正则化，值越大则越容易被抽取
     return pop[idx]
 
-def get_fitness(pop):
-    return np.random.rand(pop.shape[0])
+def get_fitness(num_part,pop):
+    fitness = []
+    for single in pop:
+        result = feedback(num_part,single)
+        fitness.append(0 if result<=0 else result)
+    return np.array(fitness)
 
-def evolution(pop,N_GENERATION):
+def evolution(pop,num_part,N_GENERATION,pop_size=None,cross_rate=None,mutation_rate=None):
+    global POP_SIZE,MUTATION_RATE,CROSSOVER_RATE
+    if pop_size:
+        POP_SIZE=pop_size
+    if mutation_rate:
+        MUTATION_RATE = mutation_rate
+    if cross_rate:
+        CROSSOVER_RATE = cross_rate
     for n in range(N_GENERATION):
         pop = np.array(crossover_and_mutation(pop,CROSSOVER_RATE))
-        fitness = get_fitness(pop)
+        fitness = get_fitness(num_part,pop)
         pop = select(pop,fitness)
-    pop = translateDNA(pop.astype(np.float64))
+        max_fitness_idx = np.argmax(fitness)
+        print('第{}代，最好的基因型{}，收益为{}'.format(n+1,pop[max_fitness_idx],fitness[max_fitness_idx]))
+        
     return pop.sum(axis=0)/pop.shape[0]
 
+def generate_pop():
+    return np.random.randint(2,size=(POP_SIZE,DNA_SIZE*2))
 if __name__ == '__main__':
-    dna = np.random.randint(2,size=(DNA_SIZE,))
-    result = feedback(100,dna)
-    print(result)
+    pop = generate_pop()
+    result = evolution(pop,num_part=10000,N_GENERATION=20)
